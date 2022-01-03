@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block head %}
+  <title>Miya Home</title>
+  <script src="/static/js/signUp.js"></script>
+{% endblock %}
+
+{% block body %}
+  <div class="container">
+    <div class="row justify-content-center mt-5">
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body text-center">
+            <img src="/static/images/miya_logo.png" class="w-120 rounded-circle">
+            <div>
+              <h1>Welcom MIYA Home.</h1>
+              <a href="/creator" class="text-center"><p class="small">creator</p></a>
+              <a href="/placemaker" class="text-center"><p class="small">placemaker</p></a>
+              <a href="/miyaworld" class="text-center"><p class="small">MiyaWorld</p></a>
+              <nav>
+                <ul class="nav nav-pills pull-right">
+                  <li role="presentation" class="active"><a href="/logout">Logout</a></li>
+                </ul>
+              </nav>
+            </div>    
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
