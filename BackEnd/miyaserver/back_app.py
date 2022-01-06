@@ -1,10 +1,13 @@
-from flask import Flask, render_template, json, request, redirect, session
+from flask import Flask, render_template, json, request, redirect, session, jsonify
+from flask_restx import Resource, Api, reqparse
 from flaskext.mysql import MySQL
 from auth import SHA256
 
 mysql = MySQL()
 app = Flask(__name__)
+#api = Api(app)
 app.secret_key = 'back to the idea'
+#app.config['DEBUG'] = True
 
 # MySQL configurations
 app.config['MYSQL_DATABASE_USER'] = 'miya'
@@ -41,6 +44,34 @@ def signok():
 def logout():
     session.pop('user', None)
     return redirect('/')
+
+#json 형태의 데이터를 콜/리턴 하려고 뚫었으나
+#main index.html drawing하는데 이상한 점이 있음
+#@api.route('/commAPI_Flask')
+#class commAPI(Resource):
+#    print('commAPI FLASK')
+#    def get(self):
+#        data = {'get': 'ok'}
+#        return jsonify(data)
+    
+#    def post(self):
+#        data = {'post': 'ok'}
+#        return jsonify(data)
+
+
+#일단은 간단하게 redirect로 frontend app을 호출
+#다른 방법을 찾아보자
+@app.route('/3dcube')
+def go3dcube():
+    return redirect('http://3.36.139.138:8081/3dcube')
+
+@app.route('/3dworld')
+def go3dworld():
+    return redirect('http://3.36.139.138:8081/3dworld')
+
+@app.route('/list')
+def golist():
+    return redirect('http://3.36.139.138:8081/list')
 
 @app.route('/validateLogin',methods=['POST'])
 def validateLogin():

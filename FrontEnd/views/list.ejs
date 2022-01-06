@@ -1,0 +1,32 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>DB DATA</title>
+    </head>
+    <body>
+        <h2>DATA LIST</h2>
+        <table border='1'>
+            <colgroup>
+                <col width='60'><col width='200'><col width='100'>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>user id</th>
+                    <th>username</th>
+                    <th>email</th>
+                    <th>password</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% for(i = 0; i < list.length; i++) { %>
+                <tr>
+                    <td><%=i+1 %></td>
+                    <td><%=list[i].user_username %></td>
+                    <td><%=list[i].user_email %></td>
+                    <td><%=list[i].user_password %></td>
+                </tr>
+                <% } %>
+            </tbody>
+        </table boader='1'>
+    </body>
+</html>
