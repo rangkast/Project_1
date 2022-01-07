@@ -20,6 +20,10 @@ mysql.init_app(app)
 def main():
     return render_template('index.html')
 
+@app.route('/voxelPost')
+def showVoxelPost():
+    return render_template('voxelPost.html',user = session.get('username'))
+
 @app.route('/showSignUp')
 def showSignUp():
     return render_template('signup.html')
@@ -89,6 +93,7 @@ def validateLogin():
         if len(data) > 0:
             if SHA256.encrypt(_password) == str(data[0][3]):
                 session['user'] = data[0][0]
+                session['username'] = data[0][1]
                 return redirect('/userMain')
             else:
                 return render_template('error.html',error = 'Wrong User Name or Password.')
