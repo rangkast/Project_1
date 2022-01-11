@@ -3,6 +3,7 @@ import 'tippy.js/dist/tippy.css';
 import './styles/flaticon.css';
 import './styles/index.css';
 import './store';
+import './database';
 
 const loader = document.getElementById('loader');
 const loaderContainer = document.getElementById('loader-container');

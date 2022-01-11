@@ -29,6 +29,7 @@ export class FileManager extends AbstractPlugin {
   }
 
   dispatchEvent(event, eventName) {
+    console.log('dispatchEvent: ' + eventName);
     switch (eventName) {
       case 'new':
         this.handleNew();
@@ -53,6 +54,7 @@ export class FileManager extends AbstractPlugin {
   }
 
   handleNew() {
+    console.log('handleNew!');
     if (window.confirm('Are you sure you want to create a new file?')) {
       this.clearScene();
       this.configs.render();
@@ -60,16 +62,39 @@ export class FileManager extends AbstractPlugin {
   }
 
   handleSave() {
+    console.log('handleSave!');
     const data = exporter(this.configs.sceneObjects);
-
     const output = JSON.stringify(data, null, 2);
+
+    console.log(output);
+
+    //front app server 전달 (json)
+    fetch("http://10.157.15.19:8081/save", {
+      method : "POST",
+      headers : {
+        "Content-Type" : "application/json",
+      },
+      body: output,    
+    });
+
+    /*
     this.fakeLink.href = URL.createObjectURL(new Blob([output], { type: 'text/plain' }));
     this.fakeLink.download = 'scene.vxl';
     this.fakeLink.click();
+    */
   }
 
   handleOpen() {
-    this.fakeInput.click();
+    console.log('handleOpen!');
+    //this.fakeInput.click();
+    fetch("http://10.157.15.19:8081/load", {
+      method : "POST",
+    });
+  }
+
+
+  dbOpen() {
+    console.log('dbOpen!');
   }
 
   fileSelected(event) {

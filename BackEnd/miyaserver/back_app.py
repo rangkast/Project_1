@@ -5,7 +5,7 @@ from auth import SHA256
 
 mysql = MySQL()
 app = Flask(__name__)
-#api = Api(app)
+api = Api(app)
 app.secret_key = 'back to the idea'
 #app.config['DEBUG'] = True
 
@@ -16,13 +16,15 @@ app.config['MYSQL_DATABASE_DB'] = 'MiyaUserDB'
 app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
 
-@app.route('/')
+app.session_user = 'none'
+
+@app.route('/Main')
 def main():
     return render_template('index.html')
 
 @app.route('/voxelPost')
 def showVoxelPost():
-    return render_template('voxelPost.html',user = session.get('username'))
+    return render_template('voxelPost.html', user = session.get('username'))
 
 @app.route('/showSignUp')
 def showSignUp():
@@ -46,36 +48,46 @@ def signok():
 
 @app.route('/logout')
 def logout():
+    app.session_user = 'none'
     session.pop('user', None)
-    return redirect('/')
+    return redirect('/Main')
 
-#json 형태의 데이터를 콜/리턴 하려고 뚫었으나
-#main index.html drawing하는데 이상한 점이 있음
-#@api.route('/commAPI_Flask')
-#class commAPI(Resource):
-#    print('commAPI FLASK')
-#    def get(self):
-#        data = {'get': 'ok'}
-#        return jsonify(data)
-    
-#    def post(self):
-#        data = {'post': 'ok'}
-#        return jsonify(data)
+@api.route('/commAPI_flask')
+class commAPI(Resource):
+    print('commAPI FLASK')
+    #test get
+    def get(self):
+        data = {'get': 'ok'}
+        return jsonify(data)
+   
+    def post(self):
+        parsed_request = request.json.get('content')
+        print('content: ' + parsed_request)
+
+        if parsed_request == 'username':
+            _session_user = app.session_user
+            print('session user: ' + _session_user)
+            if _session_user != 'none':
+                data = {"result": 'success', "data" :_session_user}
+            else:
+                data = {"result": 'fail', "data" :_session_user}
+        else:
+             data = {"result": 'fail', "data" :'unsupported user'}
+
+        return jsonify(data)
 
 
-#일단은 간단하게 redirect로 frontend app을 호출
-#다른 방법을 찾아보자
 @app.route('/3dcube')
 def go3dcube():
-    return redirect('http://3.36.139.138:8081/3dcube')
+    return redirect('http://10.157.15.19:8081/3dcube')
 
 @app.route('/3dworld')
 def go3dworld():
-    return redirect('http://3.36.139.138:8081/3dworld')
+    return redirect('http://10.157.15.19:8081/3dworld')
 
 @app.route('/list')
 def golist():
-    return redirect('http://3.36.139.138:8081/list')
+    return redirect('http://10.157.15.19:8081/list')
 
 @app.route('/validateLogin',methods=['POST'])
 def validateLogin():
@@ -94,6 +106,7 @@ def validateLogin():
             if SHA256.encrypt(_password) == str(data[0][3]):
                 session['user'] = data[0][0]
                 session['username'] = data[0][1]
+                app.session_user = data[0][1]
                 return redirect('/userMain')
             else:
                 return render_template('error.html',error = 'Wrong User Name or Password.')

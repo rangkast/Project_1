@@ -9,7 +9,10 @@ var db_info = {
     database: 'MiyaUserDB'
 }
 
-module.exports = {
+export var database = mysql.createConnection(db_info);
+
+/*
+exports = {
     init: function () {
         return mysql.createConnection(db_info);
     },
@@ -20,6 +23,7 @@ module.exports = {
         });
     }
 }
+*/
 
 
 
