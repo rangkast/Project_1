@@ -6,8 +6,8 @@ var db_info = {
  */   
     user: 'miya',
     password: 'LGEwjdwns10.',
-    //database: 'MiyaItemDB',
-    database: 'MiyaUserDB'
+    database: 'MiyaItemDB'
+//    database: 'MiyaUserDB'
 }
 
 module.exports = {

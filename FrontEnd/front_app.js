@@ -9,10 +9,9 @@ var app = express();
 var engines = require('consolidate');
 var path = require('path');
 
-
-
 const DB_LOAD = 0;
 const DB_SAVE = 1;
+const DB_UPDATE = 2;
 
 // router 설정
 var indexRouter = require(__dirname);
@@ -31,6 +30,7 @@ app.set('view engine', 'html');
 app.use('/', indexRouter);
 module.exports = app;
 
+/*
 app.get('/list', function (req, res) {
     var sql = 'SELECT * FROM miya_user';
     conn.query(sql, function (err, rows, fields) {
@@ -40,6 +40,7 @@ app.get('/list', function (req, res) {
             res.render('list.ejs', {list : rows});
     });
 });
+*/
 //CORS 예외처리
 var cors = require("cors");
 var allowlist = ['http://10.157.15.19:8080', 'http://10.157.15.19:8082'];
@@ -98,40 +99,43 @@ const postValidateDATA = async function(cmd, req_data, callback) {
     }
     //check user db exist
     //username으로 itemDB에 table로 만들어보자.
-    //ToDo
-    /*
-    try {
-        var test = "CREATE TABLE `MiyaItemDB`.`?` (`user_id` BIGINT NOT NULL AUTO_INCREMENT,`item_name` VARCHAR(85),`item_price` VARCHAR(85),`json_data` JSON NULL,PRIMARY KEY (`user_id`))";
-        conn.query(
-            //"CREATE TABLE 'MiyaItemDB'.'test' ('user_id' BIGINT NOT NULL AUTO_INCREMENT, 'item_name' VARCHAR(85),'item_price' VARCHAR(85),'json_data' JSON NULL,PRIMARY KEY ('user_id'))",
-            test,
-            [_user_name],
-                function(queryError, queryResult){
-                    if(queryError){
-                        throw queryError;
-                    } else {
-                        console.log('make user db success\n');
-                        /*
-                        data = {"result": 'success', "data" : _user_name};
-                        callback.send(JSON.stringify(data, null, 2));
-                        */
-    /*
-                    }
-                });    
-    } catch (error) {
-        console.log(error);
-    }
-    return;
-    */
+    conn.query("SHOW TABLES LIKE '" + _user_name.toString() + "'", (error, results) => {
+        console.log(results.length + ":" + error);
+
+        if (results.length > 0) {
+            console.log('exist\n');
+        } else {
+            console.log('not exist\n');
+            try {
+                var sql = "CREATE TABLE `MiyaItemDB`. "+ _user_name.toString() +" (`user_id` BIGINT NOT NULL AUTO_INCREMENT,`item_name` VARCHAR(85),`item_price` VARCHAR(85),`json_data` JSON NULL,PRIMARY KEY (`user_id`))";
+                conn.query(sql, function(queryError, queryResult){
+                            if(queryError){
+                                console.log(queryError);
+                            } else {
+                                console.log('make user db success\n');
+                                data = {"result": 'fail', "data" : error};
+                                callback.send(JSON.stringify(data, null, 2));
+                                return;
+                            }
+                        });    
+            } catch (error) {
+                console.log(error);
+            }
+        }
+    });
+
     //가져온 정보로 userdb에 접속하여 쿼리문으로 처리
     //case는 확장하면 된다.
     //callback으로 return하여 client에서 예외 팝업을 처리할 수도 있다.
     switch (cmd) {
+        //ToDo update DB
+        case DB_UPDATE:
+
+        break;
         case DB_SAVE:
-            try {   
-                conn.query("UPDATE miya_user SET json_data = '" + JSON.stringify(req_data) + "' WHERE user_username =?",
-                [_user_name],
-                function(queryError, queryResult){
+            try {
+                var sql = "INSERT INTO "+ _user_name.toString() +" (item_name, item_price, json_data) VALUES ('" + 'mung' +"', '"+ '100만원' +"', '" + JSON.stringify(req_data) + "')";
+                conn.query(sql, function(queryError, queryResult){
                     if(queryError){
                         throw queryError;
                     } else {
@@ -148,9 +152,9 @@ const postValidateDATA = async function(cmd, req_data, callback) {
         break;
      
         case DB_LOAD:        
-            try {              
-                conn.query('SELECT * FROM miya_user WHERE user_username = ?', 
-                [_user_name],
+            try {           
+                var sql = "SELECT * FROM "+ _user_name.toString() + "";   
+                conn.query(sql, 
                 function (err, rows, fields) {
                     if(err) 
                         console.log('query is not excuted. select fail...\n' + err);
