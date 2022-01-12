@@ -9,14 +9,10 @@ var app = express();
 var engines = require('consolidate');
 var path = require('path');
 
-//CORS 예외처리
-var cors = require("cors");
-var allowlist = ['http://10.157.15.19:8080', 'http://10.157.15.19:8082'];
-var corsOptions;
+
 
 const DB_LOAD = 0;
 const DB_SAVE = 1;
-
 
 // router 설정
 var indexRouter = require(__dirname);
@@ -44,8 +40,11 @@ app.get('/list', function (req, res) {
             res.render('list.ejs', {list : rows});
     });
 });
+//CORS 예외처리
+var cors = require("cors");
+var allowlist = ['http://10.157.15.19:8080', 'http://10.157.15.19:8082'];
+var corsOptions;
 
-//Front server CORS 예외처리
 var corsOptionsDelegate = function (req, callback) {
   if (allowlist.indexOf(req.header('Origin')) !== -1) {
     corsOptions = { origin: true }
@@ -57,23 +56,22 @@ var corsOptionsDelegate = function (req, callback) {
 app.use(cors(corsOptions));
 
 var axios = require('axios');
-
 app.post('/save', cors(corsOptionsDelegate), (req, res, next) => {
     console.log('/save');
     console.log(req.body);
-    postValidateDATA(DB_SAVE, req.body);
+    postValidateDATA(DB_SAVE, req.body, res);
 });
-
 app.post('/load', cors(corsOptionsDelegate), (req, res, next) => {
     console.log('/load');
-    var ret = postValidateDATA(DB_LOAD, 'username');
-    var data = {"result": 'ok', "data" :'test'}
-    return jsonify(data);
+    postValidateDATA(DB_LOAD, 'username', res);
 });
 
-//backend(flask) 서버와의 연동
-const postValidateDATA = async function(cmd, data) {
+//post
+//callback을 json 형태로 반환
+//aync func으로 flask server에서 session 정보를 가져온다.
+const postValidateDATA = async function(cmd, req_data, callback) {
     var _user_name = 'none';
+    var data = {"result": 'fail', "data" : 'none'};
     try {
         const response =  await axios.post("http://10.157.15.19:8080/commAPI_flask", {
             content: 'username',
@@ -89,25 +87,63 @@ const postValidateDATA = async function(cmd, data) {
         }        
     } catch (error) {
         console.log(error);
+        data = {"result": 'fail', "data" : error};
+        callback.send(JSON.stringify(data, null, 2));
     }
     if (_user_name == 'none') {
         console.log('cannot find user');
+        data = {"result": 'fail', "data" : 'cannot find user'};
+        callback.send(JSON.stringify(data, null, 2));
         return;
     }
+    //check user db exist
+    //username으로 itemDB에 table로 만들어보자.
+    //ToDo
+    /*
+    try {
+        var test = "CREATE TABLE `MiyaItemDB`.`?` (`user_id` BIGINT NOT NULL AUTO_INCREMENT,`item_name` VARCHAR(85),`item_price` VARCHAR(85),`json_data` JSON NULL,PRIMARY KEY (`user_id`))";
+        conn.query(
+            //"CREATE TABLE 'MiyaItemDB'.'test' ('user_id' BIGINT NOT NULL AUTO_INCREMENT, 'item_name' VARCHAR(85),'item_price' VARCHAR(85),'json_data' JSON NULL,PRIMARY KEY ('user_id'))",
+            test,
+            [_user_name],
+                function(queryError, queryResult){
+                    if(queryError){
+                        throw queryError;
+                    } else {
+                        console.log('make user db success\n');
+                        /*
+                        data = {"result": 'success', "data" : _user_name};
+                        callback.send(JSON.stringify(data, null, 2));
+                        */
+    /*
+                    }
+                });    
+    } catch (error) {
+        console.log(error);
+    }
+    return;
+    */
+    //가져온 정보로 userdb에 접속하여 쿼리문으로 처리
+    //case는 확장하면 된다.
+    //callback으로 return하여 client에서 예외 팝업을 처리할 수도 있다.
     switch (cmd) {
         case DB_SAVE:
             try {   
-                conn.query("UPDATE miya_user SET json_data = '" + JSON.stringify(data) + "' WHERE user_username =?",
+                conn.query("UPDATE miya_user SET json_data = '" + JSON.stringify(req_data) + "' WHERE user_username =?",
                 [_user_name],
                 function(queryError, queryResult){
                     if(queryError){
                         throw queryError;
                     } else {
                         console.log('json data inserted\n');
+                        data = {"result": 'success', "data" : _user_name};
+                        callback.send(JSON.stringify(data, null, 2));
                     }
                 });
             } catch (error) {
                 console.log(error);
+                data = {"result": 'fail', "data" : error};
+                callback.send(JSON.stringify(data, null, 2));
             }
         break;
      
@@ -119,16 +155,21 @@ const postValidateDATA = async function(cmd, data) {
                     if(err) 
                         console.log('query is not excuted. select fail...\n' + err);
                     else {
-                        console.log(rows);
+                        console.log(rows[0].json_data);
+                        data = {"result": 'success', "data" : rows[0].json_data};
+                        callback.send(JSON.stringify(data, null, 2));
                     }
                 });                    
             } catch (error) {
                 console.log(error);
+                data = {"result": 'fail', "data" : error};
+                callback.send(JSON.stringify(data, null, 2));
             }
         break;
     }//end switch
 }//end function
 
+//get NOT used
 const getValidateDATA = async function(data) {
     var ret;
     try {

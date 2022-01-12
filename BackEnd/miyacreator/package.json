@@ -16,9 +16,11 @@
     "event-lite": "^0.1.2",
     "micromodal": "^0.4.6",
     "purecss": "^2.0.3",
+    "request": "^2.88.2",
     "storeon": "^3.0.2",
     "three": "^0.135.0",
-    "tippy.js": "^6.1.0"
+    "tippy.js": "^6.1.0",
+    "toaster-js": "^2.2.3"
   },
   "devDependencies": {
     "@babel/core": "^7.9.0",

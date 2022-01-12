@@ -34,11 +34,17 @@ export class FileManager extends AbstractPlugin {
       case 'new':
         this.handleNew();
         break;
-      case 'save':
+      case 'filesave':
         this.handleSave();
         break;
-      case 'open':
+      case 'fileopen':
         this.handleOpen();
+        break;
+      case 'dbsave':
+        this.dbSave();
+        break;       
+      case 'dbopen':
+        this.dbOpen();
         break;
       default:
         break;
@@ -48,7 +54,6 @@ export class FileManager extends AbstractPlugin {
   clearScene() {
     const { scene } = this.configs;
     const { sceneObjects } = this.configs;
-
     scene.remove(...sceneObjects);
     sceneObjects.splice(0, sceneObjects.length);
   }
@@ -65,9 +70,21 @@ export class FileManager extends AbstractPlugin {
     console.log('handleSave!');
     const data = exporter(this.configs.sceneObjects);
     const output = JSON.stringify(data, null, 2);
+    console.log(output);    
+    this.fakeLink.href = URL.createObjectURL(new Blob([output], { type: 'text/plain' }));
+    this.fakeLink.download = 'scene.vxl';
+    this.fakeLink.click();    
+  }
 
+  handleOpen() {
+    console.log('handleOpen!');
+    this.fakeInput.click();
+  }
+
+  dbSave() {
+    const data = exporter(this.configs.sceneObjects);
+    const output = JSON.stringify(data, null, 2);
     console.log(output);
-
     //front app server 전달 (json)
     fetch("http://10.157.15.19:8081/save", {
       method : "POST",
@@ -75,26 +92,49 @@ export class FileManager extends AbstractPlugin {
         "Content-Type" : "application/json",
       },
       body: output,    
-    });
-
-    /*
-    this.fakeLink.href = URL.createObjectURL(new Blob([output], { type: 'text/plain' }));
-    this.fakeLink.download = 'scene.vxl';
-    this.fakeLink.click();
-    */
+    })
+    .then(res => res.json())
+    .then(res => {
+      //callback 예외처리 ToDO
+      console.log(res.result + " " + res.data);
+    })
   }
-
-  handleOpen() {
-    console.log('handleOpen!');
-    //this.fakeInput.click();
-    fetch("http://10.157.15.19:8081/load", {
-      method : "POST",
-    });
-  }
-
 
   dbOpen() {
-    console.log('dbOpen!');
+    console.log('dbOpen!');    
+    fetch('http://10.157.15.19:8081/load', {
+      method: 'post',
+    })
+    .then(res => res.json())
+    .then(res => {
+      //callback 예외처리 ToDO
+      console.log(res.result + " " + res.data);
+      
+      if (res.result == 'success') {    
+
+        const { THREE } = this.configs;
+        const { scene } = this.configs;
+        const { sceneObjects } = this.configs;
+
+        const reader = new FileReader();
+        //byte 형태로 변경 후 걍 넣음, 된다.
+        reader.readAsText(new Blob([res.data], { type: 'text/plain' }));
+
+        reader.onload = () => {
+          this.clearScene();
+
+          const data = loader(THREE, reader.result);
+          data.forEach((voxel) => {
+            scene.add(voxel);
+            sceneObjects.push(voxel);
+          });
+          this.configs.render();
+        };
+      } else {
+        
+      }
+
+    })
   }
 
   fileSelected(event) {
@@ -115,11 +155,9 @@ export class FileManager extends AbstractPlugin {
           scene.add(voxel);
           sceneObjects.push(voxel);
         });
-
         this.configs.render();
       };
     }
-
     event.target.value = null;
   }
 }

@@ -1,5 +1,4 @@
 import { store } from './store';
-import { database } from './database';
 
 export class App {
   constructor(THREE, plugins) {    
@@ -40,9 +39,6 @@ export class App {
     this.editorContainer.appendChild(this.renderer.domElement);
     this.rect = this.renderer.domElement.getBoundingClientRect();
 
-
-
-
     this.pluginsInstances = {};
 
     const pluginsConfig = {
@@ -56,25 +52,12 @@ export class App {
       plugins: this.pluginsInstances,
       rect: this.rect,
       store,
-      database,
     };
 
     plugins.forEach((Plugin) => {
       this.pluginsInstances[Plugin.meta.name] = new Plugin(pluginsConfig);
     });
     store.dispatch('@init/plugins');
-    var con = database;
-
-/*
-    con.connect(function(err) {
-      if (err) throw err;
-      var sql = "SELECT * FROM miya_user";
-      con.query(sql, function (err, result, fields) {
-        if (err) throw err;
-        console.log(result);
-      });
-    });
-    */    
   }
 
   createLight() {
