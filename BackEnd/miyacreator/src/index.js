@@ -4,6 +4,7 @@ import './styles/flaticon.css';
 import './styles/index.css';
 import './store';
 
+
 const loader = document.getElementById('loader');
 const loaderContainer = document.getElementById('loader-container');
 const loaderProgress = document.getElementById('loader-progress');

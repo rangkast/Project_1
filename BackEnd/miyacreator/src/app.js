@@ -1,7 +1,6 @@
 import { store } from './store';
-
 export class App {
-  constructor(THREE, plugins) {    
+  constructor(THREE, plugins) {
 
     this.THREE = THREE;
     this.objects = [];

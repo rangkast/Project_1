@@ -12,13 +12,15 @@ var path = require('path');
 const DB_LOAD = 0;
 const DB_SAVE = 1;
 const DB_UPDATE = 2;
+const DB_LIST = 3;
 
+var port = db_config.getPort('FRONT_PORT');
+var addr = db_config.getAddress();
 // router 설정
 var indexRouter = require(__dirname);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use('/static', express.static('./static/'));
 
 // view 경로 설정
 app.set('views', __dirname + '/views');
@@ -30,20 +32,9 @@ app.set('view engine', 'html');
 app.use('/', indexRouter);
 module.exports = app;
 
-/*
-app.get('/list', function (req, res) {
-    var sql = 'SELECT * FROM miya_user';
-    conn.query(sql, function (err, rows, fields) {
-        if(err) 
-            console.log('query is not excuted. select fail...\n' + err);
-        else 
-            res.render('list.ejs', {list : rows});
-    });
-});
-*/
 //CORS 예외처리
 var cors = require("cors");
-var allowlist = ['http://10.157.15.19:8080', 'http://10.157.15.19:8082'];
+var allowlist = [addr + ":" + port, addr + ":" + db_config.getPort('BACK_PORT')];
 var corsOptions;
 
 var corsOptionsDelegate = function (req, callback) {
@@ -58,13 +49,28 @@ app.use(cors(corsOptions));
 
 var axios = require('axios');
 app.post('/save', cors(corsOptionsDelegate), (req, res, next) => {
-    console.log('/save');
-    console.log(req.body);
-    postValidateDATA(DB_SAVE, req.body, res);
+    if (db_config.DEBUG) {
+        console.log('/save');
+        console.log(req.body.cmd + " " + req.body.data);
+    }
+
+    if (req.body.cmd == 'dbInsert') {
+        postValidateDATA(DB_SAVE, req.body, res);
+    } else if (req.body.cmd == 'dbUpdate') {
+        postValidateDATA(DB_UPDATE, req.body, res);
+    }    
 });
 app.post('/load', cors(corsOptionsDelegate), (req, res, next) => {
-    console.log('/load');
-    postValidateDATA(DB_LOAD, 'username', res);
+    if (db_config.DEBUG) {
+        console.log('/load:' + req.body.data);
+    }
+    postValidateDATA(DB_LOAD, req.body.data, res);
+});
+app.post('/dblist', cors(corsOptionsDelegate), (req, res, next) => {
+    if (db_config.DEBUG) {
+        console.log('/dblist');
+    }
+    postValidateDATA(DB_LIST, 'username', res);
 });
 
 //post
@@ -74,11 +80,13 @@ const postValidateDATA = async function(cmd, req_data, callback) {
     var _user_name = 'none';
     var data = {"result": 'fail', "data" : 'none'};
     try {
-        const response =  await axios.post("http://10.157.15.19:8080/commAPI_flask", {
+        const response =  await axios.post(addr +":" + db_config.getPort('BACK_PORT') +"/commAPI_flask", {
             content: 'username',
         });
         var obj = response.data;
-        console.log(obj);
+        if (db_config.DEBUG) {
+            console.log(obj);
+        }
         if (obj.result == 'success') {                   
             if (obj.data != 'none') {
                 _user_name = obj.data;
@@ -100,19 +108,24 @@ const postValidateDATA = async function(cmd, req_data, callback) {
     //check user db exist
     //username으로 itemDB에 table로 만들어보자.
     conn.query("SHOW TABLES LIKE '" + _user_name.toString() + "'", (error, results) => {
-        console.log(results.length + ":" + error);
+        if (db_config.DEBUG) {
+            console.log(results.length + ":" + error);
+        }
 
         if (results.length > 0) {
-            console.log('exist\n');
+            if (db_config.DEBUG)
+                console.log('exist\n');
         } else {
-            console.log('not exist\n');
+            if (db_config.DEBUG)
+                console.log('not exist\n');
             try {
                 var sql = "CREATE TABLE `MiyaItemDB`. "+ _user_name.toString() +" (`user_id` BIGINT NOT NULL AUTO_INCREMENT,`item_name` VARCHAR(85),`item_price` VARCHAR(85),`json_data` JSON NULL,PRIMARY KEY (`user_id`))";
                 conn.query(sql, function(queryError, queryResult){
                             if(queryError){
                                 console.log(queryError);
                             } else {
-                                console.log('make user db success\n');
+                                if (db_config.DEBUG)
+                                    console.log('make user db success\n');
                                 data = {"result": 'fail', "data" : error};
                                 callback.send(JSON.stringify(data, null, 2));
                                 return;
@@ -130,16 +143,37 @@ const postValidateDATA = async function(cmd, req_data, callback) {
     switch (cmd) {
         //ToDo update DB
         case DB_UPDATE:
-
-        break;
-        case DB_SAVE:
+            if (db_config.DEBUG)
+                console.log('try to update' + 'user_id: ' + req_data.id);
             try {
-                var sql = "INSERT INTO "+ _user_name.toString() +" (item_name, item_price, json_data) VALUES ('" + 'mung' +"', '"+ '100만원' +"', '" + JSON.stringify(req_data) + "')";
+                var sql = "UPDATE " + _user_name.toString() +" SET json_data = '" + JSON.stringify(req_data.data) + "' WHERE user_id = '" + req_data.id + "'";   
                 conn.query(sql, function(queryError, queryResult){
                     if(queryError){
                         throw queryError;
                     } else {
-                        console.log('json data inserted\n');
+                        if (db_config.DEBUG)
+                            console.log('json data inserted\n');
+                        data = {"result": 'success', "data" : _user_name};
+                        callback.send(JSON.stringify(data, null, 2));
+                    }
+                });
+            } catch (error) {
+                console.log(error);
+                data = {"result": 'fail', "data" : error};
+                callback.send(JSON.stringify(data, null, 2));
+            }
+        break;
+        case DB_SAVE:
+            if (db_config.DEBUG)
+                console.log('try to save');
+            try {
+                var sql = "INSERT INTO "+ _user_name.toString() +" (item_name, item_price, json_data) VALUES ('" + 'mung' +"', '"+ '100만원' +"', '" + JSON.stringify(req_data.data) + "')";
+                conn.query(sql, function(queryError, queryResult){
+                    if(queryError){
+                        throw queryError;
+                    } else {
+                        if (db_config.DEBUG)
+                            console.log('json data inserted\n');
                         data = {"result": 'success', "data" : _user_name};
                         callback.send(JSON.stringify(data, null, 2));
                     }
@@ -159,9 +193,30 @@ const postValidateDATA = async function(cmd, req_data, callback) {
                     if(err) 
                         console.log('query is not excuted. select fail...\n' + err);
                     else {
-                        console.log(rows[0].json_data);
-                        data = {"result": 'success', "data" : rows[0].json_data};
+                        if (db_config.DEBUG)
+                            console.log(rows[req_data - 1].json_data);
+                        data = {"result": 'success', "data" : rows[req_data - 1].json_data};
                         callback.send(JSON.stringify(data, null, 2));
+                    }
+                });                    
+            } catch (error) {
+                console.log(error);
+                data = {"result": 'fail', "data" : error};
+                callback.send(JSON.stringify(data, null, 2));
+            }
+        break;
+        case DB_LIST:
+            try {           
+                var sql = "SELECT * FROM "+ _user_name.toString() + "";   
+                conn.query(sql, 
+                function (err, rows, fields) {
+                    if(err) 
+                        console.log('query is not excuted. select fail...\n' + err);
+                    else {
+                        if (db_config.DEBUG)
+                            console.log(rows);                        
+                        data = {"result": 'success', "data" : rows};
+                        callback.send(JSON.stringify(data, null, 2));                        
                     }
                 });                    
             } catch (error) {
@@ -177,7 +232,7 @@ const postValidateDATA = async function(cmd, req_data, callback) {
 const getValidateDATA = async function(data) {
     var ret;
     try {
-        const response =  await axios.get("http://10.157.15.19:8080/commAPI_flask", {
+        const response =  await axios.get(addr + ":" +port +"/commAPI_flask", {
             content: data,
         });
         console.log(response.data);
@@ -186,4 +241,4 @@ const getValidateDATA = async function(data) {
     }
 }
 
-app.listen(8081, () => console.log('Server is running on port 8081'));
+app.listen(port, () => console.log('Server is running on port ' + port));

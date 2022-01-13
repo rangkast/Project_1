@@ -17,6 +17,8 @@ app.config['MYSQL_DATABASE_HOST'] = 'localhost'
 mysql.init_app(app)
 
 app.session_user = 'none'
+app.address = 'http://10.157.15.19'
+app.port = '8080'
 
 @app.route('/Main')
 def main():
@@ -52,6 +54,7 @@ def logout():
     session.pop('user', None)
     return redirect('/Main')
 
+
 @api.route('/commAPI_flask')
 class commAPI(Resource):
     print('commAPI FLASK')
@@ -77,17 +80,9 @@ class commAPI(Resource):
         return jsonify(data)
 
 
-@app.route('/3dcube')
-def go3dcube():
-    return redirect('http://10.157.15.19:8081/3dcube')
-
-@app.route('/3dworld')
-def go3dworld():
-    return redirect('http://10.157.15.19:8081/3dworld')
-
 @app.route('/list')
 def golist():
-    return redirect('http://10.157.15.19:8081/list')
+    return redirect(app.address + ':' + app.port + '/list')
 
 @app.route('/validateLogin',methods=['POST'])
 def validateLogin():
@@ -158,4 +153,4 @@ def signUp():
         
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=app.port, debug=True)
