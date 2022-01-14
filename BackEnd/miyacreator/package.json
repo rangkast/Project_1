@@ -36,6 +36,7 @@
     "eslint-plugin-react": "^7.19.0",
     "eslint-plugin-react-hooks": "^4.0.3",
     "parcel": "^1.12.4",
+    "posthtml": "^0.16.5",
     "posthtml-include": "^1.4.0"
   }
 }

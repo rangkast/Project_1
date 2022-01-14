@@ -33,6 +33,9 @@ export class FileManager extends AbstractPlugin {
     document.body.appendChild(this.fakeInput);
 
     this.fakeInput.addEventListener('change', (event) => this.fileSelected(event));
+
+    //init default
+    this.dbList();
   }
   
   clickListener (event, eventName) {
@@ -182,22 +185,25 @@ export class FileManager extends AbstractPlugin {
     .then(res => res.json())
     .then(res => {
       //callback 예외처리 ToDO
-
-      var list = new Array();
-      var i;
-      list = res.data;
-      if (list != null) {
-        if (this.DEBUG) {
-          console.log(res.result + " " + list.length);
-          for (i = 0; i < list.length; i++) {
-            console.log(list[i].user_id + " " + list[i].item_name + " " 
-            + list[i].item_price + " " + list[i].json_data);
+      if (res.result == 'fail') {
+        this.updateList('error');
+      } else {
+        var list = new Array();
+        var i;
+        list = res.data;
+        if (list != null) {
+          if (this.DEBUG) {
+            console.log(res.result + " " + list.length);
+            for (i = 0; i < list.length; i++) {
+              console.log(list[i].user_id + " " + list[i].item_name + " " 
+              + list[i].item_price + " " + list[i].json_data);
+            }
           }
         }
+        this.updateList(list);
+        if (this.DEBUG)
+          console.log('done');
       }
-      this.updateList(list);
-      if (this.DEBUG)
-        console.log('done');
     })
   }
 
@@ -209,6 +215,9 @@ export class FileManager extends AbstractPlugin {
           li = "<p>No datas in DB</p>";
           li +="<p>Make new voxel</p>";
           li +="<p style='display:inline-block'>File->New->(edit)->DB Save</p>";
+          list.push(li); 
+        } else if (data == 'error') {
+          li = "<p>Session disconnected</p>";
           list.push(li); 
         } else {
           for (i = 0; i < data.length; i++) {
